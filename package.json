@@ -1,0 +1,19 @@
+{
+  "name": "venura-tech",
+  "version": "1.0.0",
+  "description": "AgriCrop Geospatial Plant Disease & Soil Moisture Intelligence Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "echo Build successful"
+  },
+  "keywords": [
+    "agricrop",
+    "agritech",
+    "mobilenet",
+    "soil-moisture",
+    "gis"
+  ],
+  "author": "Eswereddy",
+  "license": "MIT"
+}
