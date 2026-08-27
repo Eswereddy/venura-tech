@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AgriCrop — Geospatial Plant Disease & Soil Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="main.css"/>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="nav-logo"><i class="fas fa-seedling"></i></div>
+    <span class="nav-name">Agri<span class="accent">Crop</span></span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link active">Dashboard</a>
+    <a href="detect.html" class="nav-link">Detect Disease</a>
+    <a href="soil.html" class="nav-link">Soil Monitor</a>
+    <a href="map.html" class="nav-link">Outbreak Map</a>
+  </div>
+  <div class="nav-status">
+    <span class="status-dot live"></span>
+    <span class="status-label">Live · AP Zone 3</span>
+  </div>
+</nav>
+
+<!-- LIVE MANDI CROP PRICE TICKER -->
+<div class="mandi-ticker-wrap">
+  <div class="mandi-ticker-inner">
+    <div class="mandi-item"><span>🌾 Cotton (Kurnool Mandi):</span> <strong>₹7,150 / qtl</strong> <span class="mandi-up">▲ +2.4%</span></div>
+    <div class="mandi-item"><span>🌾 Paddy (Nandyal Mandi):</span> <strong>₹2,320 / qtl</strong> <span class="mandi-up">▲ +0.8%</span></div>
+    <div class="mandi-item"><span>🌾 Red Chilli (Guntur Mandi):</span> <strong>₹18,400 / qtl</strong> <span class="mandi-up">▲ +3.1%</span></div>
+    <div class="mandi-item"><span>🌾 Groundnut (Adoni Mandi):</span> <strong>₹6,450 / qtl</strong> <span class="mandi-down">▼ -0.5%</span></div>
+    <div class="mandi-item"><span>🌾 Mango (Kurnool APMC):</span> <strong>₹4,800 / qtl</strong> <span class="mandi-up">▲ +1.2%</span></div>
+    <!-- Duplicate for smooth infinite loop -->
+    <div class="mandi-item"><span>🌾 Cotton (Kurnool Mandi):</span> <strong>₹7,150 / qtl</strong> <span class="mandi-up">▲ +2.4%</span></div>
+    <div class="mandi-item"><span>🌾 Paddy (Nandyal Mandi):</span> <strong>₹2,320 / qtl</strong> <span class="mandi-up">▲ +0.8%</span></div>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">Andhra Pradesh · Kurnool District · 1,847 Fields Monitored</div>
+  <h1 class="hero-title">Every infected leaf<br/><span class="accent">caught before it spreads.</span></h1>
+  <p class="hero-sub">MobileNet disease detection + sequential soil regression + MongoDB 2dsphere geospatial indexing — all in one field intelligence platform for Indian smallholder farmers.</p>
+  <div class="hero-cta">
+    <a href="detect.html" class="btn-primary"><i class="fas fa-camera"></i> Scan a Leaf</a>
+    <a href="map.html" class="btn-secondary"><i class="fas fa-map-marked-alt"></i> View Outbreak Map</a>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="stat-num" id="detections">23</span>
+      <span class="stat-label">Fungal detections today</span>
+    </div>
+    <div class="hero-stat-divider"></div>
+    <div class="hero-stat">
+      <span class="stat-num accent">94.2%</span>
+      <span class="stat-label">MobileNet accuracy</span>
+    </div>
+    <div class="hero-stat-divider"></div>
+    <div class="hero-stat">
+      <span class="stat-num warn">3</span>
+      <span class="stat-label">Active outbreaks</span>
+    </div>
+    <div class="hero-stat-divider"></div>
+    <div class="hero-stat">
+      <span class="stat-num">1,847</span>
+      <span class="stat-label">Fields geo-indexed</span>
+    </div>
+  </div>
+</section>
+
+<!-- ALERT BANNER -->
+<div class="alert-banner">
+  <i class="fas fa-exclamation-triangle"></i>
+  <strong>Active outbreak alert:</strong> Fusarium wilt spreading NE in Kurnool North cotton belt — 14 km² affected. Immediate field inspection recommended.
+  <a href="map.html" class="alert-link">View on map →</a>
+</div>
+
+<!-- DASHBOARD GRID -->
+<section class="dashboard">
+  <div class="dash-container">
+
+    <!-- Live Microclimate Weather Card -->
+    <div class="dash-card card-weather">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-cloud-sun-rain"></i> Regional Microclimate</div>
+        <span class="badge-live"><span class="pulse-dot"></span> Kurnool District</span>
+      </div>
+      <div class="weather-grid">
+        <div class="weather-item">
+          <div class="weather-icon"><i class="fas fa-temperature-high"></i></div>
+          <div class="weather-val">34°C</div>
+          <div class="weather-lbl">Temperature</div>
+          <div class="weather-sub">High 36° / Low 24°</div>
+        </div>
+        <div class="weather-item">
+          <div class="weather-icon"><i class="fas fa-droplet"></i></div>
+          <div class="weather-val">58%</div>
+          <div class="weather-lbl">Humidity</div>
+          <div class="weather-sub">Spore Risk: Med</div>
+        </div>
+        <div class="weather-item">
+          <div class="weather-icon"><i class="fas fa-wind"></i></div>
+          <div class="weather-val">14 km/h</div>
+          <div class="weather-lbl">Wind (NE)</div>
+          <div class="weather-sub">Spreads Spores</div>
+        </div>
+        <div class="weather-item">
+          <div class="weather-icon"><i class="fas fa-sun"></i></div>
+          <div class="weather-val">7.4</div>
+          <div class="weather-lbl">UV Index</div>
+          <div class="weather-sub">High Evaporation</div>
+        </div>
+      </div>
+
+      <!-- 7-Day Spore & Rain Forecast Table -->
+      <div class="forecast-table-wrap">
+        <div style="font-size:11px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;margin-top:14px;margin-bottom:6px;">7-Day Fungal Spore & Rain Forecast</div>
+        <table class="forecast-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Rain (mm)</th>
+              <th>Humidity</th>
+              <th>Temp</th>
+              <th>Spore Outbreak Risk</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Thu (Today)</td>
+              <td>0 mm</td>
+              <td>58%</td>
+              <td>34°C</td>
+              <td><span class="spore-badge med">MODERATE</span></td>
+            </tr>
+            <tr>
+              <td>Fri (Tomorrow)</td>
+              <td>12 mm 🌧️</td>
+              <td>76%</td>
+              <td>31°C</td>
+              <td><span class="spore-badge high">HIGH (Blast Risk)</span></td>
+            </tr>
+            <tr>
+              <td>Sat</td>
+              <td>24 mm 🌧️</td>
+              <td>84%</td>
+              <td>29°C</td>
+              <td><span class="spore-badge high">HIGH (Spore Surge)</span></td>
+            </tr>
+            <tr>
+              <td>Sun</td>
+              <td>4 mm ⛅</td>
+              <td>65%</td>
+              <td>32°C</td>
+              <td><span class="spore-badge med">MODERATE</span></td>
+            </tr>
+            <tr>
+              <td>Mon</td>
+              <td>0 mm ☀️</td>
+              <td>52%</td>
+              <td>35°C</td>
+              <td><span class="spore-badge low">LOW</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mini Map -->
+    <div class="dash-card card-map">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-globe-asia"></i> Live Outbreak Map</div>
+        <a href="map.html" class="card-action">Full map →</a>
+      </div>
+      <div id="minimap"></div>
+    </div>
+
+    <!-- Disease Feed -->
+    <div class="dash-card card-feed">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-virus"></i> Disease Alerts</div>
+        <span class="badge-live"><span class="pulse-dot"></span> Live</span>
+      </div>
+
+      <!-- Severity Filter Tabs -->
+      <div class="filter-tabs" id="diseaseFilterTabs">
+        <div class="filter-tab active" onclick="filterDashboardAlerts('all', this)">All (5)</div>
+        <div class="filter-tab" onclick="filterDashboardAlerts('high', this)">High (2)</div>
+        <div class="filter-tab" onclick="filterDashboardAlerts('med', this)">Medium (1)</div>
+        <div class="filter-tab" onclick="filterDashboardAlerts('low', this)">Low (2)</div>
+      </div>
+
+      <div class="disease-list" id="diseaseList">
+        <div class="disease-item" data-sev="high" onclick="window.location='map.html'">
+          <div class="disease-sev high"></div>
+          <div class="disease-info">
+            <div class="disease-name">Fusarium wilt <span class="crop-tag">Cotton</span></div>
+            <div class="disease-meta"><i class="fas fa-map-pin"></i> 15.72°N · 78.11°E &nbsp;·&nbsp; Δ14 km² &nbsp;·&nbsp; spreading NE</div>
+          </div>
+          <div class="disease-time">2m ago</div>
+        </div>
+        <div class="disease-item" data-sev="high" onclick="window.location='map.html'">
+          <div class="disease-sev high"></div>
+          <div class="disease-info">
+            <div class="disease-name">Rice blast <span class="crop-tag">Paddy</span></div>
+            <div class="disease-meta"><i class="fas fa-map-pin"></i> 15.91°N · 77.89°E &nbsp;·&nbsp; Δ9 km² &nbsp;·&nbsp; contained</div>
+          </div>
+          <div class="disease-time">18m ago</div>
+        </div>
+        <div class="disease-item" data-sev="med" onclick="window.location='map.html'">
+          <div class="disease-sev med"></div>
+          <div class="disease-info">
+            <div class="disease-name">Powdery mildew <span class="crop-tag">Chilli</span></div>
+            <div class="disease-meta"><i class="fas fa-map-pin"></i> 15.84°N · 78.22°E &nbsp;·&nbsp; Δ3 km² &nbsp;·&nbsp; early</div>
+          </div>
+          <div class="disease-time">41m ago</div>
+        </div>
+        <div class="disease-item" data-sev="low" onclick="window.location='map.html'">
+          <div class="disease-sev low"></div>
+          <div class="disease-info">
+            <div class="disease-name">Cercospora leaf spot <span class="crop-tag">Groundnut</span></div>
+            <div class="disease-meta"><i class="fas fa-map-pin"></i> 15.78°N · 78.31°E &nbsp;·&nbsp; Δ1 km² &nbsp;·&nbsp; monitoring</div>
+          </div>
+          <div class="disease-time">1h ago</div>
+        </div>
+        <div class="disease-item" data-sev="low" onclick="window.location='map.html'">
+          <div class="disease-sev low"></div>
+          <div class="disease-info">
+            <div class="disease-name">Anthracnose <span class="crop-tag">Mango</span></div>
+            <div class="disease-meta"><i class="fas fa-map-pin"></i> 16.01°N · 78.07°E &nbsp;·&nbsp; Δ0.8 km² &nbsp;·&nbsp; isolated</div>
+          </div>
+          <div class="disease-time">2h ago</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Soil Moisture -->
+    <div class="dash-card card-soil">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-tint"></i> Soil Moisture Forecast</div>
+        <span class="meta-label">6-hr evaporation · sequential regression</span>
+      </div>
+      <div class="soil-list" id="soilList">
+        <div class="soil-row">
+          <div class="soil-zone-name">Kurnool North</div>
+          <div class="soil-bar-wrap">
+            <div class="soil-bar-track"><div class="soil-bar-fill ok" style="width:72%"></div></div>
+          </div>
+          <div class="soil-pct ok">72%</div>
+          <div class="soil-status ok">Optimal</div>
+        </div>
+        <div class="soil-row">
+          <div class="soil-zone-name">Nandyal Belt</div>
+          <div class="soil-bar-wrap">
+            <div class="soil-bar-track"><div class="soil-bar-fill warn" style="width:45%"></div></div>
+          </div>
+          <div class="soil-pct warn">45%</div>
+          <div class="soil-status warn">Monitor</div>
+        </div>
+        <div class="soil-row">
+          <div class="soil-zone-name">Allagadda South</div>
+          <div class="soil-bar-wrap">
+            <div class="soil-bar-track"><div class="soil-bar-fill danger" style="width:23%"></div></div>
+          </div>
+          <div class="soil-pct danger">23%</div>
+          <div class="soil-status danger">Irrigate</div>
+        </div>
+        <div class="soil-row">
+          <div class="soil-zone-name">Yemmiganur</div>
+          <div class="soil-bar-wrap">
+            <div class="soil-bar-track"><div class="soil-bar-fill ok" style="width:61%"></div></div>
+          </div>
+          <div class="soil-pct ok">61%</div>
+          <div class="soil-status ok">Optimal</div>
+        </div>
+        <div class="soil-row">
+          <div class="soil-zone-name">Adoni East</div>
+          <div class="soil-bar-wrap">
+            <div class="soil-bar-track"><div class="soil-bar-fill warn" style="width:38%"></div></div>
+          </div>
+          <div class="soil-pct warn">38%</div>
+          <div class="soil-status warn">Monitor</div>
+        </div>
+      </div>
+      <a href="soil.html" class="soil-full-link">Full soil monitor →</a>
+    </div>
+
+    <!-- Interactive Yield Loss & Risk Calculator -->
+    <div class="dash-card card-calc" style="grid-column: 1 / -1;">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-calculator"></i> Crop Disease Yield Loss & ROI Estimator</div>
+        <span class="meta-label">AI Economic Risk Assessment</span>
+      </div>
+      <div class="calc-grid">
+        <div>
+          <div class="calc-field">
+            <label class="calc-label">Select Crop</label>
+            <select class="calc-select" id="calcCrop" onchange="calculateCropRisk()">
+              <option value="Cotton">Cotton (Kapash)</option>
+              <option value="Paddy">Paddy / Rice</option>
+              <option value="Chilli">Red Chilli</option>
+              <option value="Groundnut">Groundnut</option>
+              <option value="Mango">Mango</option>
+            </select>
+          </div>
+          <div class="calc-field">
+            <label class="calc-label">Field Area (Acres)</label>
+            <input type="number" class="calc-input" id="calcAcres" value="5" min="1" max="100" oninput="calculateCropRisk()"/>
+          </div>
+          <div class="calc-field">
+            <label class="calc-label">Infection Severity</label>
+            <select class="calc-select" id="calcSev" onchange="calculateCropRisk()">
+              <option value="0.10">Low / Early (10% leaf damage)</option>
+              <option value="0.30" selected>Moderate (30% leaf damage)</option>
+              <option value="0.65">Severe / Advanced (65% leaf damage)</option>
+            </select>
+          </div>
+        </div>
+        <div class="calc-result-box">
+          <div class="calc-res-item">
+            <span class="calc-label">Estimated Yield Loss:</span>
+            <span class="calc-res-val warn" id="resYieldLoss">18.0 Quintals</span>
+          </div>
+          <div class="calc-res-item">
+            <span class="calc-label">Financial Risk:</span>
+            <span class="calc-res-val danger" id="resFinancialLoss">₹1,26,000</span>
+          </div>
+          <div class="calc-res-item">
+            <span class="calc-label">Preventive Spray ROI:</span>
+            <span class="calc-res-val accent" id="resSprayROI">18.2x Saved</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:4px;">*Calculated using AP Mandi MSP & MobileNet disease progression curve.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Scan CTA -->
+    <div class="dash-card card-scan">
+      <div class="scan-icon"><i class="fas fa-microscope"></i></div>
+      <div class="scan-title">Detect crop disease instantly</div>
+      <div class="scan-sub">Upload a leaf photo — MobileNet AI identifies fungal, bacterial, and viral infections in under 2 seconds.</div>
+      <a href="detect.html" class="btn-primary scan-btn"><i class="fas fa-camera"></i> Upload Leaf Photo</a>
+      <div class="scan-chips">
+        <span class="chip">Fungal</span>
+        <span class="chip">Bacterial</span>
+        <span class="chip">Viral</span>
+        <span class="chip">Deficiency</span>
+      </div>
+    </div>
+
+    <!-- Architecture -->
+    <div class="dash-card card-arch">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-project-diagram"></i> System Architecture</div>
+      </div>
+      <div class="arch-list">
+        <div class="arch-layer">
+          <div class="arch-layer-label">AI Layer</div>
+          <div class="arch-tags">
+            <span class="arch-tag teal">MobileNet CNN</span>
+            <span class="arch-tag teal">Sequential Regression</span>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-layer-label">Backend</div>
+          <div class="arch-tags">
+            <span class="arch-tag amber">Python Flask</span>
+            <span class="arch-tag amber">MongoDB 2dsphere</span>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-layer-label">Frontend</div>
+          <div class="arch-tags">
+            <span class="arch-tag blue">Leaflet.js</span>
+            <span class="arch-tag blue">Semantic HTML</span>
+            <span class="arch-tag blue">Dynamic CSS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo small"><i class="fas fa-seedling"></i></div>
+      <span>AgriCrop Intelligence · Built for Indian smallholder farmers</span>
+    </div>
+    <div class="footer-meta">
+      <span class="mono">15.83°N · 78.04°E · Kurnool, AP</span>
+      <span>·</span>
+      <span>MongoDB 2dsphere · MobileNet · Sequential Regression</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Floating Quick Action Button -->
+<button class="fab-quick" onclick="toggleQuickModal()" title="Quick Actions (Ctrl+K)">
+  <i class="fas fa-bolt"></i>
+</button>
+
+<!-- Quick Action Modal -->
+<div class="modal-overlay" id="quickModal" onclick="if(event.target===this) toggleQuickModal()">
+  <div class="modal-card">
+    <button class="modal-close" onclick="toggleQuickModal()"><i class="fas fa-times"></i></button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:12px;"><i class="fas fa-bolt" style="color:var(--green)"></i> Quick Command Palette</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <a href="detect.html" class="btn-secondary" style="justify-content:flex-start;text-align:left;"><i class="fas fa-camera" style="color:var(--green)"></i> Scan Leaf Image (MobileNet CNN)</a>
+      <a href="soil.html" class="btn-secondary" style="justify-content:flex-start;text-align:left;"><i class="fas fa-tint" style="color:var(--amber)"></i> Soil Moisture 6-hr Regression</a>
+      <a href="map.html" class="btn-secondary" style="justify-content:flex-start;text-align:left;"><i class="fas fa-map-marked-alt" style="color:var(--red)"></i> Open Outbreak Map & Zones</a>
+      <button class="btn-secondary" onclick="exportDataCSV()" style="justify-content:flex-start;text-align:left;cursor:pointer;"><i class="fas fa-download" style="color:var(--green)"></i> Export Field & Disease Log CSV</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="minimap.js"></script>
+<script src="counter.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

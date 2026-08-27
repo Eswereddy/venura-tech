@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Outbreak Map — AgriCrop</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="main.css"/>
+<style>
+  body { overflow: hidden; }
+  .map-fullpage { position: relative; height: calc(100vh - 56px); }
+  #fullmap { height: 100%; width: 100%; }
+  .map-controls {
+    position: absolute; top: 12px; left: 12px; z-index: 1000;
+    background: rgba(17,24,17,0.96);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 16px;
+    min-width: 210px;
+    backdrop-filter: blur(12px);
+  }
+  .map-legend-title {
+    font-size: 10px; font-family: 'JetBrains Mono',monospace;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    color: #5a7060; margin-bottom: 12px;
+  }
+  .map-legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: #8fa491; margin-bottom: 7px;
+  }
+  .map-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .map-legend-dot.high { background: #E04040; }
+  .map-legend-dot.med { background: #E8A020; }
+  .map-legend-dot.low { background: #1DB88E; }
+  .map-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 12px 0; }
+
+  .map-filter-title {
+    font-size: 10px; font-family: 'JetBrains Mono',monospace;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    color: #5a7060; margin-bottom: 8px;
+  }
+  .map-filter-btn {
+    display: block; width: 100%;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #8fa491;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 4px;
+    text-align: left;
+    transition: all 0.15s;
+  }
+  .map-filter-btn:hover { border-color: #1DB88E; color: #1DB88E; }
+  .map-filter-btn.active { border-color: #1DB88E; color: #1DB88E; background: rgba(29,184,142,0.08); }
+
+  .map-coord-bar {
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    z-index: 1000;
+    background: rgba(17,24,17,0.96);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #8fa491;
+    display: flex; align-items: center; gap: 12px;
+    backdrop-filter: blur(8px);
+  }
+  .map-coord-bar i { color: #1DB88E; }
+
+  .info-panel {
+    position: absolute; top: 12px; right: 12px; z-index: 1000;
+    background: rgba(17,24,17,0.96);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 16px;
+    width: 240px;
+    backdrop-filter: blur(12px);
+    display: none;
+  }
+  .info-panel.show { display: block; }
+  .info-panel-close {
+    float: right; cursor: pointer; color: #5a7060; font-size: 16px;
+    background: none; border: none; color: #5a7060; line-height: 1;
+  }
+  .info-panel-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; margin-top: 4px; }
+  .info-panel-crop { font-size: 12px; color: #8fa491; margin-bottom: 12px; font-family: 'JetBrains Mono',monospace; }
+  .info-row { display: flex; justify-content: space-between; font-size: 12px; color: #8fa491; margin-bottom: 6px; }
+  .info-row strong { color: #e8ede9; }
+  .info-reco {
+    margin-top: 12px;
+    background: rgba(29,184,142,0.07);
+    border: 1px solid rgba(29,184,142,0.15);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 11px;
+    color: #8fa491;
+    line-height: 1.6;
+  }
+
+  .leaflet-popup-content-wrapper {
+    background: rgba(17,24,17,0.97) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+  }
+  .leaflet-popup-tip { background: rgba(17,24,17,0.97) !important; }
+  .leaflet-popup-content { color: #e8ede9 !important; font-family: 'Space Grotesk',sans-serif !important; }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="nav-logo"><i class="fas fa-seedling"></i></div>
+    <span class="nav-name">Agri<span class="accent">Crop</span></span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">Dashboard</a>
+    <a href="detect.html" class="nav-link">Detect Disease</a>
+    <a href="soil.html" class="nav-link">Soil Monitor</a>
+    <a href="map.html" class="nav-link active">Outbreak Map</a>
+  </div>
+  <div class="nav-status">
+    <span class="status-dot live"></span>
+    <span class="status-label">MongoDB 2dsphere · Live</span>
+  </div>
+</nav>
+
+<div class="map-fullpage">
+  <div id="fullmap"></div>
+
+  <!-- Legend + Filter Panel -->
+  <div class="map-controls">
+    <!-- Zone Search -->
+    <div class="map-search-wrap">
+      <i class="fas fa-search map-search-icon"></i>
+      <input type="text" class="map-search-input" id="mapSearch" placeholder="Search zone (e.g. Nandyal)..." onkeyup="searchMapZone()"/>
+    </div>
+
+    <div class="map-legend-title">Outbreak severity</div>
+    <div class="map-legend-item"><div class="map-legend-dot high"></div>High — active spread</div>
+    <div class="map-legend-item"><div class="map-legend-dot med"></div>Medium — contained</div>
+    <div class="map-legend-item"><div class="map-legend-dot low"></div>Low — monitoring</div>
+    <div class="map-divider"></div>
+    <div class="map-filter-title">Filter by severity</div>
+    <button class="map-filter-btn active" id="filter-all" onclick="setFilter('all')">All outbreaks</button>
+    <button class="map-filter-btn" id="filter-high" onclick="setFilter('high')">High severity only</button>
+    <button class="map-filter-btn" id="filter-med" onclick="setFilter('med')">Medium & above</button>
+    <div class="map-divider"></div>
+    <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:#5a7060;margin-bottom:6px;">2DSPHERE QUERY</div>
+    <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:#8fa491;line-height:1.8;">
+      db.outbreaks.find({<br>
+      &nbsp;coords: {<br>
+      &nbsp;&nbsp;$near: {<br>
+      &nbsp;&nbsp;&nbsp;$geometry: {<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;type: "Point",<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;coords: [78.04, 15.83]<br>
+      &nbsp;&nbsp;&nbsp;},<br>
+      &nbsp;&nbsp;&nbsp;$maxDistance: 80000<br>
+      &nbsp;&nbsp;}<br>
+      &nbsp;}<br>
+      })
+    </div>
+  </div>
+
+  <!-- Info Panel (click on marker) -->
+  <div class="info-panel" id="infoPanel">
+    <button class="info-panel-close" onclick="document.getElementById('infoPanel').classList.remove('show')">✕</button>
+    <div id="infoPanelContent"></div>
+  </div>
+
+  <!-- Coordinate Bar -->
+  <div class="map-coord-bar">
+    <i class="fas fa-crosshairs"></i>
+    <span id="coordDisplay">Hover to show coordinates</span>
+    <span>·</span>
+    <span>Kurnool District, AP</span>
+    <span>·</span>
+    <span id="markerCount">5 outbreak zones</span>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="map.js"></script>
+</body>
+</html>
